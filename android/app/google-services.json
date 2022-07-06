@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "668823680278",
+    "project_id": "tour-ci",
+    "storage_bucket": "tour-ci.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668823680278:android:735b99ace6a738af5e0c37",
+        "android_client_info": {
+          "package_name": "com.reinvent.tour_ci"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "668823680278-i3q4jqnv2p08osg4kk09kcpma8gd19tv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAh5Xm4OwGrjrE_7ZZ8yeEcwBetLJwkceM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668823680278-i3q4jqnv2p08osg4kk09kcpma8gd19tv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
