@@ -317,13 +317,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.6.4"
-  latlng:
-    dependency: "direct main"
-    description:
-      name: latlng
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
   latlong2:
     dependency: transitive
     description:

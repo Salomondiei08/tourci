@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -8,6 +9,7 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
+
   @override
   Widget build(BuildContext context) {
     return Scaffold();

@@ -1,13 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:tour_ci/models/place.dart';
+import 'package:tour_ci/providers/city_provider.dart';
 import 'package:tour_ci/providers/place_provider.dart';
 
-import 'package:tour_ci/screens/search_place_screen.dart';
-
+import '../models/city.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_list_item.dart';
 import '../widgets/place_item_list.dart';
@@ -21,6 +18,31 @@ class OverviewScreen extends StatefulWidget {
 }
 
 class _OverviewScreenState extends State<OverviewScreen> {
+  bool _isDataLoading = false;
+
+  Future<void> getOlineData() async {
+    setState(() {
+      _isDataLoading = true;
+    });
+    getOlineCity();
+    await Provider.of<PlaceProvider>(context, listen: false).fetchAndSetPlace();
+    setState(() {
+      _isDataLoading = false;
+    });
+  }
+
+  Future<void> getOlineCity() async {
+    await Provider.of<CityProvider>(context, listen: false).fetchAndSetCity();
+  }
+
+  @override
+  void initState() {
+    if (Provider.of<PlaceProvider>(context, listen: false).placeList.isEmpty) {
+      getOlineData();
+    }
+    super.initState();
+  }
+
   int indexSelected = 0;
   @override
   Widget build(BuildContext context) {
@@ -103,7 +125,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     scrollDirection: Axis.horizontal,
                     itemCount: placeProvider.placeCategoryList.length,
                     itemBuilder: (_, i) => CategoryListItem(
-                          elementText:  placeProvider.placeCategoryList[i],
+                          elementText: placeProvider.placeCategoryList[i],
                           elementIndex: i,
                           indexSelected: indexSelected,
                           functionCallBack: _changeElement,
@@ -114,13 +136,29 @@ class _OverviewScreenState extends State<OverviewScreen> {
           Expanded(
             flex: 9,
             child: Consumer<PlaceProvider>(
-              builder: (context, placeProvider, child) => ListView.builder(
-                itemCount: placeProvider.placeList.length,
-                itemBuilder: (context, i) {
-                  return PlaceListItem(
-                      placeProvider: placeProvider, indexofPlace: i);
-                },
-              ),
+              builder: (context, placeProvider, child) => _isDataLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: getOlineData,
+                      child: placeProvider.placeList.isEmpty
+                          ? const Center(
+                              child: Text('Aucun élément à afficher'))
+                          : ListView.builder(
+                              itemCount: placeProvider.placeList.length,
+                              itemBuilder: (context, i) {
+                                // final City city =
+                                //     Provider.of<CityProvider>(context).findById(
+                                //         placeProvider.placeList[i].cityId);
+
+                                return PlaceListItem(
+                                    placeProvider: placeProvider,
+                                    indexofPlace: i,
+                                    city: 'Abidjan');
+                              },
+                            ),
+                    ),
             ),
           )
         ],
@@ -134,5 +172,3 @@ class _OverviewScreenState extends State<OverviewScreen> {
     });
   }
 }
-
-

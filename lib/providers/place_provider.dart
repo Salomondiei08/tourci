@@ -1,37 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
-
-import '../models/city.dart';
 
 import '../models/place.dart';
 
 class PlaceProvider extends ChangeNotifier {
   List<Place> _placeList = [
-    Place(
-        id: "02934",
-        name: "La statut Akwaba",
-        description:
-            "Voluptate ea quis proident sint magna quis velit. Velit veniam enim labore ex ipsum aute pariatur. Dolore irure commodo cillum Lorem ut. Laborum tempor quis tempor id duis commodo do proident aliqua quis ex occaecat ut nulla.",
-        imageUrl:
-            "https://afriquinfos.com/wp-content/uploads/2019/09/INP-Houphou%C3%ABt-Boigny-DR.jpg'",
-        location: LatLng(5.316667, -4.033333),
-        cityId: '',
-        commentsIds: [],
-        townshipId: ''),
-    Place(
-      id: "02934",
-      name: "La Statut Akwaba",
-      description: "OKNJDKFON",
-      imageUrl:
-          "https://afriquinfos.com/wp-content/uploads/2019/09/INP-Houphou%C3%ABt-Boigny-DR.jpg'",
-      location: LatLng(10, 10),
-      cityId: '',
-      commentsIds: [],
-      townshipId: '',
-    )
   ];
 
   List<Place> get placeList => [..._placeList];
@@ -47,9 +24,47 @@ class PlaceProvider extends ChangeNotifier {
   List<Place> findByName(String placeName) {
     return [
       ...placeList.where((oldPlace) =>
-          oldPlace.name.toLowerCase().startsWith(placeName.toUpperCase()))
+          oldPlace.name.toLowerCase().startsWith(placeName.toLowerCase()))
     ];
   }
+
+  Future<void> addPlace(Place place) async {
+    final url = Uri.parse(
+        "https://tour-ci-default-rtdb.europe-west1.firebasedatabase.app/place.json");
+
+    try {
+      final response = await http.post(url,
+          body: json.encode({
+            'description': place.description,
+            'imageUrl': place.imageUrl,
+            "latitude": place.location.latitude,
+            "longitude": place.location.longitude,
+            'name': place.name,
+            'cityId': place.cityId,
+            'townshipId': place.townshipId,
+            'commentsIds': place.commentsIds,
+          }));
+
+      final id = json.decode(response.body)['name'];
+      final newPlace = Place(
+        id: id,
+        description: place.description,
+        imageUrl: place.imageUrl,
+        location: LatLng(place.location.latitude, place.location.longitude),
+        name: place.name,
+        cityId: place.cityId,
+        commentsIds: place.commentsIds,
+        townshipId: place.townshipId,
+      );
+      _placeList.add(newPlace);
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
+
+  int numberOfLikes = Place.numberOfLikes;
 
   int getLenght() => placeList.length;
 
@@ -65,9 +80,12 @@ class PlaceProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final response = await http.patch(url,
-          body: json.encode({'isFavorite': place.isFavorite}));
-          
-await http.patch(url,
+          body: json.encode({
+            'isFavorite': place.isFavorite,
+            'numberOfLikes': Place.numberOfLikes + 1
+          }));
+
+      await http.patch(url,
           body: json.encode({'isFavorite': place.isFavorite}));
       if (response.statusCode >= 400) {
         place.isFavorite = favoriteStatus;
@@ -79,10 +97,34 @@ await http.patch(url,
     }
   }
 
+  Future<void> fetchNumberOfLikes() async {
+    try {
+      final url = Uri.parse(
+          "https://tour-ci-default-rtdb.europe-west1.firebasedatabase.app/place.json");
+
+      final response = await http.get(url);
+      final dynamic extractedData =
+          json.decode(response.body) as Map<String, dynamic>;
+      if (extractedData == null) {
+        return;
+      }
+      int fetchedNumberOfLikes = 0;
+      extractedData.forEach((prodId, prodData) {
+        fetchedNumberOfLikes = prodData['numberOfLikes'] as int;
+      });
+      numberOfLikes = fetchedNumberOfLikes;
+      Place.numberOfLikes = fetchedNumberOfLikes;
+      notifyListeners();
+    } catch (error) {
+      print('Une erreue est survenue : $error');
+      rethrow;
+    }
+  }
+
   Future<void> fetchAndSetPlace() async {
     try {
       final url = Uri.parse(
-          "https://shoppy-59758-default-rtdb.europe-west1.firebasedatabase.app/place.json");
+          "https://tour-ci-default-rtdb.europe-west1.firebasedatabase.app/place.json");
 
       final response = await http.get(url);
       final dynamic extractedData =
@@ -92,6 +134,10 @@ await http.patch(url,
       }
       final List<Place> loadedPlace = [];
       extractedData.forEach((prodId, prodData) {
+        final List<String> commentsIds = [];
+        (prodData['commentsIds'] as List<dynamic>)
+            .map((e) => commentsIds.add(e));
+
         loadedPlace.add(
           Place(
             id: prodId,
@@ -100,13 +146,17 @@ await http.patch(url,
             isFavorite: prodData['isFavorite'],
             cityId: prodData['cityId'],
             name: prodData['name'],
-            location: prodData['location'],
+            location: LatLng(prodData['latitude'], prodData['longitude']),
             townshipId: prodData['townshipId'],
-            commentsIds: prodData['commentsIds'],
+            commentsIds: commentsIds,
           ),
         );
       });
       _placeList = loadedPlace;
+      _placeList.forEach(
+        (element) => print(element.name),
+      );
+
       notifyListeners();
     } catch (error) {
       print('Une erreue est survenue : $error');

@@ -1,33 +1,12 @@
-import 'package:flutter/cupertino.dart';
-import 'package:latlong2/latlong.dart';
+import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import '../models/city.dart';
 
 class CityProvider extends ChangeNotifier {
-  final List<City> _cityList = [
-    City(
-      id: "id",
-      name: "Man",
-      description:
-          "Ex duis Lorem excepteur pariatur ad velit sit est do sit occaecat labore. Voluptate sit enim ad eu cillum ullamco ut occaecat voluptate anim culpa dolor. Amet esse enim aliquip commodo est ex minim in commodo dolore elit irure. Sit do esse velit ea est id officia enim. Cillum duis laboris elit elit sunt sit qui veniam do enim sunt incididunt. Proident occaecat aute anim occaecat sunt cupidatat consequat qui consequat id qui elit sint id.",
-      location: LatLng(10, 10),
-      imageUrl:
-          "https://afriquinfos.com/wp-content/uploads/2019/09/INP-Houphou%C3%ABt-Boigny-DR.jpg'",
-      placeIDs: [],
-      twonshipsID: [],
-    ),
-    City(
-      id: "id",
-      name: "Man",
-      description:
-          'Lorem consequat incididunt laboris aliquip dolor adipisicing ex aliqua. Excepteur exercitation dolore esse tempor nulla cillum minim. Qui commodo ea et eu eu qui. Fugiat deserunt qui fugiat mollit magna dolore sunt minim magna. Nulla elit sit eu aliquip laboris sunt nulla duis nostrud et et fugiat aute.',
-      location: LatLng(10, 10),
-      imageUrl:
-          "https://afriquinfos.com/wp-content/uploads/2019/09/INP-Houphou%C3%ABt-Boigny-DR.jpg'",
-      placeIDs: [],
-      twonshipsID: [],
-    )
-  ];
+  List<City> _cityList = [];
 
   List<City> get cityList => [..._cityList];
 
@@ -46,7 +25,82 @@ class CityProvider extends ChangeNotifier {
     ];
   }
 
+  City findById(String cityId) {
+    return cityList.firstWhere((oldcity) => oldcity.id == cityId);
+  }
+
   int getLenght() => cityList.length;
 
   bool iscityListEmpty() => cityList.isEmpty;
+
+  Future<void> fetchAndSetCity() async {
+    try {
+      final url = Uri.parse(
+          "https://tour-ci-default-rtdb.europe-west1.firebasedatabase.app//city.json");
+
+      final response = await http.get(url);
+      final dynamic extractedData =
+          json.decode(response.body) as Map<String, dynamic>;
+      if (extractedData == null) {
+        return;
+      }
+      final List<City> loadedCity = [];
+      final List<String> townShipsId = [];
+      final List<String> placeIDs = [];
+      extractedData.forEach((prodId, prodData) {
+      (prodData['twonshipsID'] as List<dynamic>).map((e) => townShipsId.add(e));
+      (prodData['placeIDs'] as List<dynamic>).map((e) => placeIDs.add(e));
+        loadedCity.add(
+          City(
+            id: prodId,
+            description: prodData['description'],
+            imageUrl: prodData['imageUrl'],
+            name: prodData['name'],
+            location: LatLng(prodData['latitude'], prodData['longitude']),
+            placeIDs: placeIDs,
+            twonshipsID: townShipsId,
+          ),
+        );
+      });
+      _cityList = loadedCity;
+      notifyListeners();
+    } catch (error) {
+      print('Une erreue est survenue : $error');
+      rethrow;
+    }
+  }
+
+  Future<void> addCity(City city) async {
+    final url = Uri.parse(
+        "https://tour-ci-default-rtdb.europe-west1.firebasedatabase.app//city.json");
+
+    try {
+      final response = await http.post(url,
+          body: json.encode({
+            'description': city.description,
+            'imageUrl': city.imageUrl,
+            "latitude": city.location.latitude,
+            "longitude": city.location.longitude,
+            'name': city.name,
+            'placeIDs': city.placeIDs,
+            'twonshipsID': city.twonshipsID,
+          }));
+
+      final id = json.decode(response.body)['name'];
+      final newCity = City(
+        id: id,
+        description: city.description,
+        imageUrl: city.imageUrl,
+        location: LatLng(city.location.latitude, city.location.longitude),
+        name: city.name,
+        placeIDs: city.placeIDs,
+        twonshipsID: city.twonshipsID,
+      );
+      _cityList.add(newCity);
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
 }

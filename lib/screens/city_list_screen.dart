@@ -17,7 +17,29 @@ class CityListScreen extends StatefulWidget {
 }
 
 class _CityListScreenState extends State<CityListScreen> {
+  bool _isDataLoading = false;
+
+  Future<void> getOlineData() async {
+    setState(() {
+      _isDataLoading = true;
+    });
+
+    await Provider.of<CityProvider>(context, listen: false).fetchAndSetCity();
+    setState(() {
+      _isDataLoading = false;
+    });
+  }
+
   int indexSelected = 0;
+
+  @override
+  void initState() {
+    if (Provider.of<CityProvider>(context, listen: false).cityList.isEmpty) {
+      getOlineData();
+    }
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,15 +132,21 @@ class _CityListScreenState extends State<CityListScreen> {
           Expanded(
             flex: 9,
             child: Consumer<CityProvider>(
-                builder: (context, cityProvider, child) => ListView.builder(
-                    padding: EdgeInsets.all(0),
-                    itemCount: cityProvider.cityList.length,
-                    itemBuilder: (context, i) {
-                      return CityItem(
-                        city: cityProvider.cityList[i],
-
-                      );
-                    })),
+                builder: (context, cityProvider, child) => _isDataLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: getOlineData,
+                        child: ListView.builder(
+                            padding: const EdgeInsets.all(0),
+                            itemCount: cityProvider.cityList.length,
+                            itemBuilder: (context, i) {
+                              return CityItem(
+                                city: cityProvider.cityList[i],
+                              );
+                            }),
+                      )),
           )
         ],
       ),
